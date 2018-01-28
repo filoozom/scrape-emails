@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const url = require("url")
+const url = require("url");
 const Scraper = require("./scraper");
 
 var argv = require("yargs")

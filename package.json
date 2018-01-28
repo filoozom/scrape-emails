@@ -17,6 +17,7 @@
     "eslint-plugin-json": "^1.2.0",
     "eslint-plugin-prettier": "^2.5.0",
     "husky": "^0.14.3",
+    "lint-staged": "^6.1.0",
     "prettier": "^1.10.2"
   },
   "scripts": {
