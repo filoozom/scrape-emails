@@ -1,6 +1,6 @@
 {
   "name": "scrape-emails",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Scrape emails from whole rendered website with puppeteer",
   "main": "src/cli.js",
   "bin": {

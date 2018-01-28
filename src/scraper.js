@@ -19,15 +19,6 @@ module.exports = class Scraper {
     this._batchJobs = new BatchJobs(this._options.concurrency);
   }
 
-  _parseUrl(link) {
-    const parse = url.parse(link);
-
-    return {
-      uri: `${parse.protocol}//${parse.host}`,
-      pathname: parse.pathname
-    };
-  }
-
   _waitForBatchJobs() {
     return new Promise(resolve => {
       this._batchJobs.on("end", data => {
@@ -46,19 +37,20 @@ module.exports = class Scraper {
     }
   }
 
-  async _fetchUrl(pathname, callback) {
+  async _fetchUrl(link, callback) {
     const page = await this._browser.newPage();
-    await page.goto(this._uri + pathname);
+    await page.goto(link);
     await page.waitFor(this._options.waitForPageLoad);
 
     const data = await page.evaluate(() => {
       return {
+        origin: window.location.origin,
+        html: document.documentElement.outerHTML,
         mailto: [].slice
           .call(document.querySelectorAll('a[href^="mailto:"]'))
           .map(element => {
             return element.pathname;
           }),
-        html: document.documentElement.outerHTML,
         links: Array.from(document.getElementsByTagName("a"))
           .filter(element => {
             return (
@@ -79,7 +71,9 @@ module.exports = class Scraper {
     data.links.forEach(link => {
       if (!this._links.has(link)) {
         this._links.add(link);
-        this._batchJobs.push(done => this._fetchUrl(link, done));
+        this._batchJobs.push(done =>
+          this._fetchUrl(url.resolve(data.origin, link), done)
+        );
       }
     });
 
@@ -90,15 +84,10 @@ module.exports = class Scraper {
   }
 
   async scrape(link) {
-    const { uri, pathname } = this._parseUrl(link);
-
-    this._uri = uri;
-    this._links.add(pathname);
-
     await this._initBrowser();
 
     const result = this._waitForBatchJobs();
-    this._batchJobs.push(done => this._fetchUrl(pathname, done));
+    this._batchJobs.push(done => this._fetchUrl(link, done));
     this._batchJobs.start();
 
     return await result;
