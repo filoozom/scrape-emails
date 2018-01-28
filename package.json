@@ -1,0 +1,49 @@
+{
+  "name": "scrape-emails",
+  "version": "1.0.0",
+  "description": "Scrape emails from whole rendered website with puppeteer",
+  "main": "src/cli.js",
+  "bin": {
+    "scrape-emails": "./src/cli.js"
+  },
+  "dependencies": {
+    "batch-jobs": "^1.0.2",
+    "puppeteer": "^1.0.0",
+    "yargs": "^11.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^4.16.0",
+    "eslint-config-prettier": "^2.9.0",
+    "eslint-plugin-json": "^1.2.0",
+    "eslint-plugin-prettier": "^2.5.0",
+    "husky": "^0.14.3",
+    "prettier": "^1.10.2"
+  },
+  "scripts": {
+    "prettier": "prettier -l **/*.js **/*.json",
+    "prettier:write": "prettier --write **/*.js **/*.json",
+    "lint": "eslint **/*.js **/*.json",
+    "lint-staged": "lint-staged",
+    "precommit": "lint-staged"
+  },
+  "keywords": [
+    "scrape",
+    "email",
+    "concurrent"
+  ],
+  "author": {
+    "name": "Philippe Schommers",
+    "email": "philippe@schommers.be"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/filoozom/batch-jobs"
+  },
+  "license": "MIT",
+  "lint-staged": {
+    "**/*.js": [
+      "prettier --write",
+      "git add"
+    ]
+  }
+}
