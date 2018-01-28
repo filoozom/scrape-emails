@@ -17,7 +17,6 @@ module.exports = class Scraper {
     this._options = Object.assign({}, OPTIONS, options);
     this._links = new Set();
     this._batchJobs = new BatchJobs(this._options.concurrency);
-    this._lastPageLoad = 0;
   }
 
   _parseUrl(link) {
