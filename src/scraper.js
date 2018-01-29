@@ -7,7 +7,7 @@ const url = require("url");
 const EMAIL_REGEX = /([a-zA-Z0-9._-]+@[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/gi;
 const OPTIONS = {
   concurrency: 2,
-  waitForPageLoad: 2500,
+  waitForPageLoad: 500,
   navigationTimeout: 30000,
   puppeteer: {}
 };
@@ -24,7 +24,7 @@ module.exports = class Scraper {
     return new Promise(resolve => {
       this._batchJobs.on("end", data => {
         const emails = [].concat.apply([], data).filter((v, i, a) => {
-          return a.indexOf(v) === i;
+          return a.indexOf(v) === i && !!v;
         });
 
         this._browser.close().then(() => resolve(emails));
@@ -39,7 +39,11 @@ module.exports = class Scraper {
   }
 
   _shouldAbortRequest(request) {
-    return request.resourceType() === "image" || request.headers()["upgrade"];
+    return (
+      ["stylesheet", "image", "media", "font", "websocket"].indexOf(
+        request.resourceType()
+      ) >= 0
+    );
   }
 
   async _addPageInterception(page) {
@@ -50,39 +54,58 @@ module.exports = class Scraper {
   }
 
   async _fetchUrl(link, callback) {
-    const page = await this._browser.newPage();
-    await this._addPageInterception(page);
-    await page.goto(link, {
-      waitUntil: ["load", "domcontentloaded"],
-      timeout: this._options.navigationTimeout
-    });
-    await page.waitFor(this._options.waitForPageLoad);
+    let page, data;
 
-    const data = await page.evaluate(() => {
-      return {
-        origin: window.location.origin,
-        html: document.documentElement.outerHTML,
-        mailto: [].slice
-          .call(document.querySelectorAll('a[href^="mailto:"]'))
-          .map(element => {
-            return element.pathname;
-          }),
-        links: Array.from(document.getElementsByTagName("a"))
-          .filter(element => {
-            return (
-              element.hostname === window.location.hostname &&
-              (element.protocol === "http:" || element.protocol === "https:") &&
-              element.pathname
-            );
-          })
-          .map(element => {
-            return element.pathname;
-          })
-          .filter((v, i, a) => {
-            return a.indexOf(v) === i;
-          })
-      };
-    });
+    try {
+      page = await this._browser.newPage();
+      await this._addPageInterception(page);
+      await page.goto(link, {
+        waitUntil: ["load", "domcontentloaded"],
+        timeout: this._options.navigationTimeout
+      });
+      await page.waitFor(this._options.waitForPageLoad);
+
+      data = await page.evaluate(
+        regex => {
+          regex = new RegExp(regex.source, regex.flags);
+          return {
+            origin: window.location.origin,
+            emails: [].slice
+              .call(document.querySelectorAll('a[href^="mailto:"]'))
+              .map(element => {
+                return element.pathname;
+              })
+              .concat(document.documentElement.outerHTML.match(regex) || []),
+            links: Array.from(document.getElementsByTagName("a"))
+              .filter(element => {
+                return (
+                  element.hostname === window.location.hostname &&
+                  (element.protocol === "http:" ||
+                    element.protocol === "https:") &&
+                  element.pathname
+                );
+              })
+              .map(element => {
+                return element.pathname;
+              })
+              .filter((v, i, a) => {
+                return a.indexOf(v) === i;
+              })
+          };
+        },
+        {
+          source: EMAIL_REGEX.source,
+          flags: EMAIL_REGEX.flags
+        }
+      );
+    } catch (_) {
+      callback(null);
+      return;
+    } finally {
+      try {
+        await page.close();
+      } catch (_) {}
+    }
 
     data.links.forEach(link => {
       if (!this._links.has(link)) {
@@ -93,10 +116,7 @@ module.exports = class Scraper {
       }
     });
 
-    const emails = [...data.mailto, ...(data.html.match(EMAIL_REGEX) || [])];
-
-    await page.close();
-    callback(emails);
+    callback(data.emails);
   }
 
   async scrape(link) {
