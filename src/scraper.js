@@ -8,6 +8,7 @@ const EMAIL_REGEX = /([a-zA-Z0-9._-]+@[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.
 const OPTIONS = {
   concurrency: 2,
   waitForPageLoad: 2500,
+  navigationTimeout: 30000,
   puppeteer: {}
 };
 
@@ -39,7 +40,10 @@ module.exports = class Scraper {
 
   async _fetchUrl(link, callback) {
     const page = await this._browser.newPage();
-    await page.goto(link);
+    await page.goto(link, {
+      waitUntil: ["load", "domcontentloaded"],
+      timeout: this._options.navigationTimeout
+    });
     await page.waitFor(this._options.waitForPageLoad);
 
     const data = await page.evaluate(() => {

@@ -10,6 +10,9 @@ var argv = require("yargs")
   .alias("w", "wait")
   .describe("w", "Wait for page load (milliseconds)")
   .default("w", 2500)
+  .alias("n", "navigation-timeout")
+  .describe("n", "Navigation timeout (milliseconds)")
+  .default("n", 30000)
   .boolean("json")
   .describe("json", "Return array in JSON format")
   .alias("h", "help")
@@ -28,7 +31,8 @@ try {
 (async () => {
   const scraper = new Scraper({
     concurrency: argv.concurrency,
-    waitForPageLoad: argv.wait
+    waitForPageLoad: argv.wait,
+    navigationTimeout: argv.navigationTimeout
   });
   const emails = await scraper.scrape(argv._[0]);
 
