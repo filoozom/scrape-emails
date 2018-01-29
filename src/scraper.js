@@ -38,8 +38,20 @@ module.exports = class Scraper {
     }
   }
 
+  _shouldAbortRequest(request) {
+    return request.resourceType() === "image" || request.headers()["upgrade"];
+  }
+
+  async _addPageInterception(page) {
+    await page.setRequestInterception(true);
+    page.on("request", request => {
+      this._shouldAbortRequest(request) ? request.abort() : request.continue();
+    });
+  }
+
   async _fetchUrl(link, callback) {
     const page = await this._browser.newPage();
+    await this._addPageInterception(page);
     await page.goto(link, {
       waitUntil: ["load", "domcontentloaded"],
       timeout: this._options.navigationTimeout
