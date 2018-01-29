@@ -13,6 +13,9 @@ var argv = require("yargs")
   .alias("n", "navigation-timeout")
   .describe("n", "Navigation timeout (milliseconds)")
   .default("n", 30000)
+  .alias("l", "levels")
+  .describe("l", "Path levels to follow. Set 0 for all levels.")
+  .default("l", 0)
   .boolean("json")
   .describe("json", "Return array in JSON format")
   .alias("h", "help")
@@ -30,6 +33,7 @@ try {
 
 (async () => {
   const scraper = new Scraper({
+    levels: argv.levels,
     concurrency: argv.concurrency,
     waitForPageLoad: argv.wait,
     navigationTimeout: argv.navigationTimeout

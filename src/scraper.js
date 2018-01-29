@@ -6,6 +6,7 @@ const url = require("url");
 // Constants
 const EMAIL_REGEX = /([a-zA-Z0-9._-]+@[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/gi;
 const OPTIONS = {
+  levels: 0,
   concurrency: 2,
   waitForPageLoad: 500,
   navigationTimeout: 30000,
@@ -108,6 +109,13 @@ module.exports = class Scraper {
     }
 
     data.links.forEach(link => {
+      if (
+        this._options.levels > 0 &&
+        link.split("/").filter(path => !!path).length > this._options.levels
+      ) {
+        return;
+      }
+
       if (!this._links.has(link)) {
         this._links.add(link);
         this._batchJobs.push(done =>
